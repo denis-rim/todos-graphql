@@ -1,5 +1,5 @@
 import React from "react";
-import { useQuery } from "react-apollo";
+import { useMutation, useQuery } from "react-apollo";
 import { gql } from "apollo-boost";
 
 // todo: list todos
@@ -18,8 +18,26 @@ const GET_TODOS = gql`
   }
 `;
 
+const TOGGLE_TODOS = gql`
+  mutation toggleTodo($id: uuid!, $done: Boolean!) {
+    update_todos(where: { id: { _eq: $id } }, _set: { done: $done }) {
+      returning {
+        done
+        id
+        text
+      }
+    }
+  }
+`;
+
 function App() {
   const { data, loading, error } = useQuery(GET_TODOS);
+  const [toggleTodo] = useMutation(TOGGLE_TODOS);
+
+  const handleToggleTodo = async ({ id, done }) => {
+    const data = await toggleTodo({ variables: { id, done: !done } });
+    console.log(data);
+  };
 
   if (loading) return <div>Loading todos...</div>;
   if (error) return <div>Error fetching todos</div>;
@@ -39,8 +57,10 @@ function App() {
       </form>
       <div className="flex flex-center justify-center flex-column">
         {data.todos.map((todo) => (
-          <p key={todo.id}>
-            <span className="pointer list pa1 f3">{todo.text}</span>
+          <p onClick={() => handleToggleTodo(todo)} key={todo.id}>
+            <span className={`pointer list pa1 f3 ${todo.done && "strike"}`}>
+              {todo.text}
+            </span>
             <button className="bg-transparent bn f4">
               <span className="red">&times;</span>
             </button>
