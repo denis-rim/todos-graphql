@@ -1,7 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import App from "./App";
-import ApolloClient, { gql } from "apollo-boost";
+import ApolloClient from "apollo-boost";
+import { ApolloProvider } from "react-apollo";
 
 const client = new ApolloClient({
   uri: "https://react-todo-2021.hasura.app/v1/graphql",
@@ -11,18 +12,9 @@ const client = new ApolloClient({
   },
 });
 
-client
-  .query({
-    query: gql`
-      query getTodos {
-        todos {
-          id
-          done
-          text
-        }
-      }
-    `,
-  })
-  .then((data) => console.log(data));
-
-ReactDOM.render(<App />, document.getElementById("root"));
+ReactDOM.render(
+  <ApolloProvider client={client}>
+    <App />
+  </ApolloProvider>,
+  document.getElementById("root")
+);
