@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useMutation, useQuery } from "react-apollo";
 import { gql } from "apollo-boost";
 
@@ -6,7 +6,6 @@ import { gql } from "apollo-boost";
 // todo: add todos
 // todo: toggle todos
 // todo: delete todos
-// todo: edit todos
 
 const GET_TODOS = gql`
   query getTodos {
@@ -30,13 +29,40 @@ const TOGGLE_TODOS = gql`
   }
 `;
 
+const ADD_TODO = gql`
+  mutation addTodo($text: String!) {
+    insert_todos(objects: { text: $text }) {
+      returning {
+        done
+        text
+        id
+      }
+    }
+  }
+`;
+
 function App() {
+  const [todoText, setTodoText] = useState("");
   const { data, loading, error } = useQuery(GET_TODOS);
   const [toggleTodo] = useMutation(TOGGLE_TODOS);
+  const [addTodo] = useMutation(ADD_TODO, {
+    onCompleted: () => setTodoText(""),
+  });
 
   const handleToggleTodo = async ({ id, done }) => {
     const data = await toggleTodo({ variables: { id, done: !done } });
-    console.log(data);
+    console.log("toggle todo: ", data);
+  };
+
+  const handleAddTodo = async (event) => {
+    event.preventDefault();
+    if (!todoText.trim()) return;
+    const data = await addTodo({
+      variables: { text: todoText },
+      refetchQueries: [{ query: GET_TODOS }],
+    });
+    console.log("add todo: ", data);
+    // setTodoText("");
   };
 
   if (loading) return <div>Loading todos...</div>;
@@ -45,11 +71,13 @@ function App() {
   return (
     <div className="vh-100 code flex flex-column items-center bg-purple white pa3 fl-1">
       <h1 className="ft-l">GraphQL Checklist</h1>
-      <form className="mb3">
+      <form onSubmit={handleAddTodo} className="mb3">
         <input
           className="pa2 f4 b--dashed"
           type="text"
           placeholder="What ToDo?"
+          value={todoText}
+          onChange={(event) => setTodoText(event.target.value)}
         />
         <button className="pa2 f4 bg-green" type="submit">
           Add ToDo
