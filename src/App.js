@@ -17,7 +17,7 @@ const GET_TODOS = gql`
   }
 `;
 
-const TOGGLE_TODOS = gql`
+const TOGGLE_TODO = gql`
   mutation toggleTodo($id: uuid!, $done: Boolean!) {
     update_todos(where: { id: { _eq: $id } }, _set: { done: $done }) {
       returning {
@@ -41,13 +41,26 @@ const ADD_TODO = gql`
   }
 `;
 
+const DELETE_TODO = gql`
+  mutation deleteTodo($id: uuid!) {
+    delete_todos(where: { id: { _eq: $id } }) {
+      returning {
+        done
+        id
+        text
+      }
+    }
+  }
+`;
+
 function App() {
   const [todoText, setTodoText] = useState("");
   const { data, loading, error } = useQuery(GET_TODOS);
-  const [toggleTodo] = useMutation(TOGGLE_TODOS);
+  const [toggleTodo] = useMutation(TOGGLE_TODO);
   const [addTodo] = useMutation(ADD_TODO, {
     onCompleted: () => setTodoText(""),
   });
+  const [deleteTodo] = useMutation(DELETE_TODO);
 
   const handleToggleTodo = async ({ id, done }) => {
     const data = await toggleTodo({ variables: { id, done: !done } });
@@ -63,6 +76,21 @@ function App() {
     });
     console.log("add todo: ", data);
     // setTodoText("");
+  };
+
+  const handleDeleteTodo = async ({ id }) => {
+    const isConfirmed = window.confirm("Delete this todo?");
+    if (isConfirmed) {
+      const data = await deleteTodo({
+        variables: { id },
+        update: (cache) => {
+          const prevData = cache.readQuery({ query: GET_TODOS });
+          const newTodos = prevData.todos.filter((todo) => todo.id !== id);
+          cache.writeQuery({ query: GET_TODOS, data: { todos: newTodos } });
+        },
+      });
+      console.log("delete todo: ", data);
+    }
   };
 
   if (loading) return <div>Loading todos...</div>;
@@ -89,7 +117,10 @@ function App() {
             <span className={`pointer list pa1 f3 ${todo.done && "strike"}`}>
               {todo.text}
             </span>
-            <button className="bg-transparent bn f4">
+            <button
+              onClick={() => handleDeleteTodo(todo)}
+              className="bg-transparent bn f4"
+            >
               <span className="red">&times;</span>
             </button>
           </p>
