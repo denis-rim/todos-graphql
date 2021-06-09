@@ -1,17 +1,28 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import React from "react";
+import ReactDOM from "react-dom";
+import App from "./App";
+import ApolloClient, { gql } from "apollo-boost";
 
-ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-  document.getElementById('root')
-);
+const client = new ApolloClient({
+  uri: "https://react-todo-2021.hasura.app/v1/graphql",
+  headers: {
+    "x-hasura-admin-secret":
+      "oQHWqK1WCIyI4is0pCN1KP0eGEW95PPF2A6yJkGaeIBe4xNI7d3vHYsjGh7a6MJh",
+  },
+});
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+client
+  .query({
+    query: gql`
+      query getTodos {
+        todos {
+          id
+          done
+          text
+        }
+      }
+    `,
+  })
+  .then((data) => console.log(data));
+
+ReactDOM.render(<App />, document.getElementById("root"));
